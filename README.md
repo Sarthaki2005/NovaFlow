@@ -116,18 +116,18 @@ Requirements
 
 Build Steps
 
-# Clone the repository
+## Clone the repository
 git clone https://github.com/yourusername/NovaFlow.git
 cd NovaFlow
 
-# Create build directory
+## Create build directory
 mkdir build && cd build
 
-# Configure and build
+## Configure and build
 cmake ..
 make
 
-# Run the benchmark
+## Run the benchmark
 ./bench_pool
 
 Created by [Sarthaki Bhoir]
