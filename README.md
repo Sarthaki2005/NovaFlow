@@ -1,6 +1,4 @@
-This is the complete, corrected, and fully formatted README.md file. It includes
-the architecture details, benchmarking, and profiling sections that were
-truncated previously.
+
 
 # NovaFlow
 
@@ -117,7 +115,7 @@ Requirements
 Build Steps
 
 ## Clone the repository
-git clone https://github.com/yourusername/NovaFlow.git
+git clone https://github.com/Sarthaki2005/NovaFlow
 cd NovaFlow
 
 ## Create build directory
