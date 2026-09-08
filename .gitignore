@@ -1,0 +1,9 @@
+build/
+bin/
+*.o
+*.a
+*.so
+pool_bench
+bench_pool
+.vscode/
+.idea/
