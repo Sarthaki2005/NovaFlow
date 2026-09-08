@@ -1,6 +1,6 @@
-This is a professional README.md file designed to showcase your engineering
-skills to recruiters and senior developers. It uses industry-standard formatting
-and highlights the high-performance nature of your work.
+This is the complete, corrected, and fully formatted README.md file. It includes
+the architecture details, benchmarking, and profiling sections that were
+truncated previously.
 
 # NovaFlow
 
@@ -8,6 +8,7 @@ and highlights the high-performance nature of your work.
 
 [![Language](https://img.shields.io/badge/language-C%2B%2B17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![Performance](https://img.shields.io/badge/Performance-267x_Faster_than_std::async-green.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
@@ -21,13 +22,17 @@ NovaFlow was benchmarked against `std::async` using the **Google Benchmark** fra
 | **Peak Throughput** | 2.5k tasks/s | **785k tasks/s** | **314x** |
 | **Imbalanced Workload** | High Latency | **Low Latency** | **Optimized** |
 
+---
+
 ## ✨ Core Features
 
-*   **Work-Stealing Algorithm:** Decentralized scheduling where idle threads "steal" tasks from the back of other workers' queues to ensure 100% CPU utilization.
-*   **Contention Minimization:** Per-thread local queues reduce mutex contention, allowing the system to scale linearly with core count.
-*   **Advanced Type Erasure:** A custom `TaskWrapper` enables the pool to handle move-only types (like `std::packaged_task`), which standard `std::function` cannot support.
-*   **LIFO/FIFO Hybrid:** Local threads process tasks in LIFO order to improve **cache locality**, while stealing occurs in FIFO order to reduce interference with the owner thread.
-*   **Future-Based API:** Full support for `std::future`, allowing for seamless result retrieval and exception propagation.
+* **Work-Stealing Algorithm:** Decentralized scheduling where idle threads "steal" tasks from the back of other workers' queues to ensure 100% CPU utilization.
+* **Contention Minimization:** Per-thread local queues reduce mutex contention, allowing the system to scale linearly with core count.
+* **Advanced Type Erasure:** A custom `TaskWrapper` enables the pool to handle move-only types (like `std::packaged_task`), which standard `std::function` cannot support.
+* **LIFO/FIFO Hybrid:** Local threads process tasks in LIFO order to improve **cache locality**, while stealing occurs in FIFO order to reduce interference with the owner thread.
+* **Future-Based API:** Full support for `std::future`, allowing for seamless result retrieval and exception propagation.
+
+---
 
 ## 🛠 Usage
 
@@ -37,7 +42,7 @@ NovaFlow is header-only and easy to integrate into existing C++ projects.
 #include "WorkStealingPool.hpp"
 
 int main() {
-    // Initialize pool with hardware concurrency (e.g., 4 or 8 threads)
+    // Initialize pool with hardware concurrency
     WorkStealingPool pool;
 
     // 1. Fire-and-forget task
@@ -55,41 +60,75 @@ int main() {
     
     return 0;
 }
-
-🏗 Architecture Detail
+```
+## 🏗 Architecture Detail
 
 The Bottleneck Problem
 
-In a standard thread pool, all threads compete for a single global task queue.
-As core counts increase, the time spent waiting for the global lock often
-exceeds the time spent executing the actual task.
+In a standard thread pool, all threads compete for a single global task queue
+guarded by a single mutex. As core counts increase, worker threads spend more
+CPU cycles waiting to acquire the global lock than executing actual task
+payloads.
 
 The NovaFlow Solution
 
-NovaFlow assigns a LocalQueue to every worker thread:
+NovaFlow assigns an independent LocalQueue to every worker thread:
 
-1.  Local Push/Pop: When a thread enqueues a task, it pushes it to its own
-    queue. It also pops from its own queue first.
-2.  The Steal: If a thread's queue is empty, it becomes a "thief" and looks at
-    other threads' queues. It steals from the bottom of the victim's queue.
-3.  Synchronization: This "Top-Bottom" approach minimizes the chance of a worker
-    and a thief trying to access the same memory simultaneously.
+1.  Local Push/Pop: When a worker thread enqueues or executes a task, it
+    interacts directly with its own local queue without acquiring global locks.
+2.  Work-Stealing Mechanism: When a worker thread runs out of tasks in its local
+    queue, it transforms into a "thief" thread. It selects a victim thread at
+    random and steals tasks from the victim's queue.
+3.  Lock Minimization (LIFO/FIFO Hybrid):
+      - Local Owner (LIFO): Pushes and pops from the front of its own queue,
+        utilizing "hot" CPU cache lines for optimal data locality.
+      - Stealer Threads (FIFO): Steal tasks from the back of the victim's queue.
+        This dual-ended approach minimizes synchronization lock contention
+        between local execution and external stealing.
 
-📈 Benchmarking Results
+## 📈 Benchmarking & Systems Profiling
 
-The following results were captured on a 4-core machine:
+Google Benchmark Suite
 
-Benchmark                          Time             CPU   Throughput
+Micro-benchmarks conducted across uniform execution loads and imbalanced core
+distribution tests:
+
+Benchmark                           Time         CPU   Throughput
 --------------------------------------------------------------------
-BM_WorkStealing_MicroTasks/10000   15.0 ms         14.1 ms   710k/s
-BM_WorkStealing_Imbalanced/50000   63.7 ms         63.7 ms   785k/s
-BM_StdAsync_Baseline/10000         4015 ms         3948 ms   2.5k/s
+BM_WorkStealing_MicroTasks/10000    15.0 ms     14.1 ms   710k/s
+BM_WorkStealing_Imbalanced/50000    63.7 ms     63.7 ms   785k/s
+BM_StdAsync_Baseline/10000          4015 ms     3948 ms   2.5k/s
 
-⚙️ Build Requirements
+Linux perf Profiling
+
+Low-level hardware performance counters were monitored using perf stat to
+evaluate cache locality and CPU efficiency:
+
+perf stat -e task-clock,context-switches,cpu-migrations,cycles,instructions ./bench_pool
+
+## ⚙️ Building & Running
+
+Requirements
 
   - Compiler: C++17 compatible (GCC 7+, Clang 5+, MSVC 2017+)
-  - Build System: CMake 3.10+
-  - Dependencies: Header-only (No external dependencies)
+  - Build System: CMake 3.14+
+  - Environment: Linux / WSL2 / macOS
 
-Created by [Your Name]
+Build Steps
+
+# Clone the repository
+git clone https://github.com/yourusername/NovaFlow.git
+cd NovaFlow
+
+# Create build directory
+mkdir build && cd build
+
+# Configure and build
+cmake ..
+make
+
+# Run the benchmark
+./bench_pool
+
+Created by [Sarthaki Bhoir]
 
